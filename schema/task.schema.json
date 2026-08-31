@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "description": "One unit of work in the agent-tasks queue. Designed to map cleanly onto DB columns later (repo, stage, status, priority as indexed columns; payload/result/history as JSON columns).",
+  "type": "object",
+  "required": ["id", "repo", "stage", "status", "title", "priority", "created_at", "history"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable task id, also the filename stem. Format: YYYYMMDD-HHMMSS-<4 char suffix>, so plain `ls | sort` is chronological."
+    },
+    "repo": {
+      "type": "string",
+      "description": "Target repo name (matches a tasks/<repo>/ directory in this queue)."
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch in the target repo this task works on, if applicable."
+    },
+    "stage": {
+      "type": "string",
+      "description": "Pipeline stage, e.g. implement | test | review. Agents claim by matching this field."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "claimed", "done", "failed"]
+    },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "priority": {
+      "type": "integer",
+      "description": "Lower claims first. Default 5.",
+      "default": 5
+    },
+    "depends_on": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Task ids that must be done before this one is eligible to claim (checked by claim-task.sh)."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Freeform input for whichever agent claims this stage (spec text, file paths, prior stage's result, etc.)."
+    },
+    "result": {
+      "type": "object",
+      "description": "Freeform output written by complete-task.sh when the task finishes."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "created_by": { "type": "string" },
+    "history": {
+      "type": "array",
+      "description": "Append-only log of state transitions.",
+      "items": {
+        "type": "object",
+        "required": ["event", "at"],
+        "properties": {
+          "event": { "type": "string" },
+          "agent": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}
