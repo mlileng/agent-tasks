@@ -29,6 +29,7 @@ agent-tasks/
   scripts/
     lib.sh                     # shared helpers (sourced, not run directly)
     create-task.sh              # enqueue a task
+    create-task-from-issue.sh    # enqueue a task from a GitHub issue URL (via gh)
     claim-task.sh                # atomically claim one eligible task
     complete-task.sh             # finish a task, optionally enqueue the next stage
     list-tasks.sh                 # status view across the queue
@@ -93,6 +94,33 @@ for each real repo you want to run a pipeline against.
 8. **(Optional) Set `AGENT_TASKS_WEBHOOK_URL`** in the environment the loop
    runs under to get a ping (Slack-compatible webhook) whenever a headless
    run finishes.
+
+## Creating a task from a GitHub issue
+
+If the work is already tracked as a GitHub issue, skip writing a spec by hand:
+
+```
+scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7
+```
+
+This shells out to `gh api repos/<owner>/<repo>/issues/<number>` (REST, not
+`gh issue view --json`, which is GraphQL-backed — some corporate proxies
+allow REST but block GitHub's GraphQL endpoint, so REST is the more portable
+choice here) and freezes the issue's title, body, url, and labels into the
+task's `payload` at creation time. The claiming agent then doesn't need `gh`
+or network access to GitHub at all, and the task file stays a true record of
+what was asked even if the issue is edited afterwards. Requires `gh auth
+status` to already be logged in, and assumes your local `tasks/<repo>/`
+directory name matches the GitHub repo name.
+
+Stage defaults to `implement`; pass one explicitly, and anything after it
+forwards straight through to `create-task.sh` to override the branch name,
+priority, etc.:
+
+```
+scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7 \
+  review --priority 1 --branch fix/issue-7
+```
 
 ## The state machine
 
