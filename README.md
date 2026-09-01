@@ -136,6 +136,51 @@ without a human relaying "go fix this."
 to see the whole queue's state. There's no daemon required to view it, it's
 just files.
 
+## Upgrading a seeded copy
+
+Once you've cloned this somewhere and started running pipelines, that copy
+holds two kinds of thing: the **framework** (`scripts/`, `schema/`,
+`.claude/agents/`, `README.md`, `LICENSE`, `.gitignore`) and **your queue
+data** (`tasks/<repo>/{pending,claimed,done}/` and the claim/complete history
+in git). Upgrading means pulling new framework files without touching the
+queue.
+
+One-time, in your copy:
+
+```
+git remote add upstream <this-repo-url>
+git fetch upstream --tags
+```
+
+Then for each upgrade, pin to a tag (not `upstream/main`) so it's
+deterministic and reviewable:
+
+```
+git fetch upstream --tags
+
+# what actually changed in the framework, not your queue:
+git diff HEAD v0.1.0 -- scripts schema .claude/agents README.md LICENSE .gitignore
+
+# take upstream's version of just those paths:
+git checkout v0.1.0 -- scripts schema .claude/agents README.md LICENSE .gitignore
+git commit -m "upgrade agent-tasks scaffold to v0.1.0"
+```
+
+`tasks/` is never in that path list, so nothing under it — pending JSON,
+in-flight claims, `done/` records — is disturbed. New script files are added;
+existing ones are updated in place.
+
+Caveats:
+
+- **Local customizations in the listed paths get overwritten.** If you've
+  narrowed a role's `tools:` in `.claude/agents/*.md` or edited
+  `.claude/settings.json`, read the `git diff` first and re-apply your
+  changes after the checkout. Better: keep per-role tweaks in the *target*
+  repo's own `.claude/agents/`, where scaffold upgrades can't reach them.
+- **Upstream deletions don't propagate.** `git checkout <tag> -- <path>`
+  only adds or updates files that exist at that tag; it never deletes. Your
+  `tasks/<repo>/` skeletons stay put regardless of what upstream removes.
+
 ## Safety notes
 
 - `run-agent-loop.sh` runs Claude Code with `--permission-mode acceptEdits`,
