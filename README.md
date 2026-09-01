@@ -47,14 +47,14 @@ for each real repo you want to run a pipeline against.
 ## Setup
 
 1. **Push this repo somewhere all your machines can reach.** It doesn't need
-   to be GitHub — a bare repo on your Hetzner box works fine, e.g.:
+   to be GitHub — a bare repo on any server you control works fine, e.g.:
    ```
-   ssh hetzner 'git init --bare /srv/git/agent-tasks.git'
-   git remote add origin hetzner:/srv/git/agent-tasks.git
+   ssh yourserver 'git init --bare /srv/git/agent-tasks.git'
+   git remote add origin yourserver:/srv/git/agent-tasks.git
    git push -u origin main
    ```
 2. **Lay out target repos as siblings of this checkout**, e.g.
-   `~/work/agent-tasks`, `~/work/api-service`, `~/work/lifeos-mcp` — the
+   `~/work/agent-tasks`, `~/work/example-repo`, `~/work/another-repo` — the
    example subagents assume they can `cd ../<target-repo>` and
    `git worktree add` from there. This matches a normal multi-repo layout.
 3. **Make sure `jq` and `git` are installed** wherever agents will run
@@ -69,10 +69,10 @@ for each real repo you want to run a pipeline against.
    reviewer can't push/merge).
 6. **Do the first cycle by hand** before automating anything:
    ```
-   scripts/create-task.sh api-service implement "Add health endpoint" \
+   scripts/create-task.sh example-repo implement "Add health endpoint" \
      --payload '{"spec":"Add GET /health returning 200 OK"}' \
      --branch feature/health-endpoint
-   scripts/claim-task.sh implementer-1 --stage implement --repo api-service
+   scripts/claim-task.sh implementer-1 --stage implement --repo example-repo
    # ... do the work yourself, or run: claude --agent implementer -p "..."
    scripts/complete-task.sh <claimed-path> implementer-1 \
      --result '{"commit":"<sha>"}' --next-stage test
@@ -84,10 +84,10 @@ for each real repo you want to run a pipeline against.
 7. **Automate one stage at a time.** For each (subagent, stage, repo) you
    want running unattended:
    ```
-   nohup scripts/run-agent-loop.sh implementer implement api-service 60 &
+   nohup scripts/run-agent-loop.sh implementer implement example-repo 60 &
    ```
    or, better, a systemd unit per instance (`systemctl --user enable
-   --now agent-loop@implementer-implement-api-service`) so it survives
+   --now agent-loop@implementer-implement-example-repo`) so it survives
    reboots and you get logs via `journalctl`. `run-agent-loop.sh` polls,
    and only spends a `claude -p` call when there's actually a pending task
    for it — it doesn't burn tokens polling.

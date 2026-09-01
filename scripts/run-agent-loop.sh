@@ -2,8 +2,8 @@
 # run-agent-loop.sh <subagent-name> <stage> <target-repo> [poll-seconds]
 #
 # A long-lived poller meant to run under cron or systemd (one instance per
-# stage/repo pair you want automated, e.g. `implementer implement api-service`
-# and `tester test api-service` as two separate services). It does NOT loop
+# stage/repo pair you want automated, e.g. `implementer implement example-repo`
+# and `tester test example-repo` as two separate services). It does NOT loop
 # inside a single Claude session — each cycle is a fresh, cheap `claude -p`
 # invocation that claims and completes at most one task, so a crash or a bad
 # run never leaves a half-finished multi-task session behind.
