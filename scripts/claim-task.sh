@@ -95,13 +95,23 @@ while (( ATTEMPT < MAX_ATTEMPTS )); do
     exit 0
   fi
 
-  if git push --quiet 2>/dev/null; then
+  # See lib.sh's push_with_retry for why this can't be a bare
+  # `PUSH_ERR=$(git push ...)` statement under `set -e`.
+  PUSH_ERR=$(git push 2>&1) && PUSH_RC=0 || PUSH_RC=$?
+  if [[ $PUSH_RC -eq 0 ]]; then
     echo "$DEST"
     exit 0
   fi
 
-  echo "push rejected (race with another agent), retrying ($ATTEMPT/$MAX_ATTEMPTS)..." >&2
-  git reset --hard --quiet HEAD~1
+  if is_push_race_rejection "$PUSH_ERR"; then
+    echo "push rejected (race with another agent), retrying ($ATTEMPT/$MAX_ATTEMPTS)..." >&2
+    git reset --hard --quiet HEAD~1
+    continue
+  fi
+
+  echo "error: git push failed for a reason other than a claim race — not retrying. Your claim is committed locally but not shared; fix the problem below, then 'git push' by hand to actually claim it:" >&2
+  echo "$PUSH_ERR" >&2
+  exit 1
 done
 
 echo "error: failed to claim a task after $MAX_ATTEMPTS attempts (heavy contention?)" >&2
