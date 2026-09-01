@@ -100,7 +100,7 @@ for each real repo you want to run a pipeline against.
 If the work is already tracked as a GitHub issue, skip writing a spec by hand:
 
 ```
-scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7
+scripts/create-task-from-issue.sh https://github.com/octocat/example-repo/issues/7
 ```
 
 This shells out to `gh api repos/<owner>/<repo>/issues/<number>` (REST, not
@@ -118,7 +118,7 @@ forwards straight through to `create-task.sh` to override the branch name,
 priority, etc.:
 
 ```
-scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7 \
+scripts/create-task-from-issue.sh https://github.com/octocat/example-repo/issues/7 \
   review --priority 1 --branch fix/issue-7
 ```
 

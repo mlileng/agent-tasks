@@ -13,9 +13,9 @@
 # (--depends-on, --created-by).
 #
 # Examples:
-#   scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7
-#   scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7 review
-#   scripts/create-task-from-issue.sh https://github.com/mlileng/lileng-athlete-mcp/issues/7 \
+#   scripts/create-task-from-issue.sh https://github.com/octocat/example-repo/issues/7
+#   scripts/create-task-from-issue.sh https://github.com/octocat/example-repo/issues/7 review
+#   scripts/create-task-from-issue.sh https://github.com/octocat/example-repo/issues/7 \
 #     implement --priority 1 --branch fix/issue-7
 #
 # Assumes gh is installed and authenticated (gh auth status), and that your
