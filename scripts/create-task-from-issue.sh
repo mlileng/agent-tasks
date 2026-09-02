@@ -41,6 +41,8 @@ if [[ $# -gt 0 && "$1" != -* ]]; then
   STAGE="$1"
   shift
 fi
+# Everything left after the URL (and optional bare stage) forwards to
+# create-task.sh. May legitimately be empty.
 EXTRA_ARGS=("$@")
 
 if [[ "$ISSUE_URL" =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)/?$ ]]; then
@@ -59,8 +61,13 @@ PAYLOAD=$(jq -c '{spec: .body, issue_number: .number, issue_url: .html_url, issu
 
 echo "fetched issue #$ISSUE_NUM from $OWNER/$GH_REPO: $TITLE" >&2
 
+# "${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}" — not a bare "${EXTRA_ARGS[@]}" —
+# because macOS still ships bash 3.2, where expanding an empty array under
+# `set -u` is an "unbound variable" error. The ${arr[@]+...} guard expands to
+# nothing when the array is empty and to the elements otherwise; it's a no-op
+# on bash 4.4+.
 scripts/create-task.sh "$GH_REPO" "$STAGE" "$TITLE" \
   --payload "$PAYLOAD" \
   --description "$ISSUE_URL" \
   --branch "issue-$ISSUE_NUM" \
-  "${EXTRA_ARGS[@]}"
+  "${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}"
