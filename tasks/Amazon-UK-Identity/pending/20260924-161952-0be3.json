@@ -1,0 +1,30 @@
+{
+  "id": "20260924-161952-0be3",
+  "repo": "Amazon-UK-Identity",
+  "branch": "issue-9",
+  "stage": "implement",
+  "status": "pending",
+  "title": "Smoke test technical approach with Amazon (Christelle Ngambula) using synthetic data set",
+  "description": "https://github.com/Morten-Lileng_dentsu/Amazon-UK-Identity/issues/9",
+  "priority": 5,
+  "depends_on": [],
+  "payload": {
+    "spec": "## What\n\nWork with Christelle Ngambula (ngambula@amazon.es) at Amazon to smoke test the end-to-end technical approach (normalization → hashing → partitioning → delivery format) using a **synthetic** dataset, rather than real UK PII.\n\n## Why\n\nValidates the AIP export pipeline and format against Amazon's actual matching infrastructure without waiting on the outstanding legal/compliance gates (Legal/GDPR review, DPA, WINR contract permission — see `REQUIREMENTS.md` Section 3 and Section 10). A synthetic-data smoke test can de-risk the technical integration in parallel with those approvals, rather than being blocked by them.\n\n## Scope\n\n- [ ] Agree with Christelle on the synthetic dataset format/shape (record count, field coverage — ideally mirroring the real schema in `sql/04-amazon-pii-export.sql` / `sql/05-amazon-ipv4-export.sql`)\n- [ ] Generate the synthetic dataset (no real PII) through the existing normalization UDFs (`sql/03-amazon-normalization-udfs.sql`)\n- [ ] Export to Parquet via the existing pipeline (`sql/06-export-to-parquet.sql`) and confirm partition structure matches Amazon's confirmed spec (`source={provider_name}/spine={spine}/country=gb/date=YYYY-MM-DD/`)\n- [ ] Deliver to Amazon via an agreed transport (transport mechanism itself is still undecided — see the \"Transport (undecided)\" block in `docs/diagrams/amazon-uk-identity-pipeline.d2`)\n- [ ] Confirm with Amazon/Christelle Ngambula that the file format, hashing, and partitioning are ingested correctly on their end\n- [ ] Document findings/discrepancies back into `EXECUTIVE_SUMMARY.md` or this issue\n\n## Related\n\n- Complements #8 (real, stratified UK sample) — that issue is about sampling dentsu's actual population for the eventual real test; this issue is about proving the pipeline/format works at all, using synthetic (non-PII) data, independent of legal clearance on real data.\n- Blocked items tracked in `README.md` (AWS provider name/account ID, EU-region S3 path) may also apply here if Amazon requires the same onboarding details even for a synthetic smoke test — confirm with Christelle whether a lighter-weight delivery path exists for test data.\n",
+    "issue_number": 9,
+    "issue_url": "https://github.com/Morten-Lileng_dentsu/Amazon-UK-Identity/issues/9",
+    "issue_title": "Smoke test technical approach with Amazon (Christelle Ngambula) using synthetic data set",
+    "labels": [
+      "enhancement"
+    ]
+  },
+  "result": {},
+  "created_at": "2026-09-24T16:19:52Z",
+  "created_by": "mlileng",
+  "history": [
+    {
+      "event": "created",
+      "agent": "mlileng",
+      "at": "2026-09-24T16:19:52Z"
+    }
+  ]
+}
