@@ -1,0 +1,50 @@
+direction: down
+
+human: You {
+  shape: person
+}
+
+enqueue: Enqueue {
+  create: "create-task.sh /\ncreate-task-from-issue.sh"
+}
+
+queue: "tasks/<repo>/ (JSON files in a shared git repo)" {
+  pending: pending/
+  claimed: "claimed/<agent-id>/"
+  done: done/
+  pending -> claimed: "claim-task.sh\ngit mv + commit + push\n(push rejected = lost the race, retry)" {
+    style.stroke: "#c0392b"
+  }
+  claimed -> done: "complete-task.sh\nrecords result"
+}
+
+agents: "Agents: one headless claude -p loop per stage" {
+  impl: implementer
+  test: tester
+  review: reviewer
+  impl -> test: "--next-stage test"
+  test -> review: "--next-stage review"
+  test -> impl: "tests fail:\n--next-stage implement" {
+    style.stroke-dash: 3
+  }
+}
+
+repo: "Target repo (sibling checkout)" {
+  branch: "feature branch (git worktree)"
+  pr: "Pull request\nready for human review"
+  branch -> pr
+}
+
+notify: "Stop hook -> Slack / webhook"
+
+human -> enqueue.create: "spec or GitHub issue URL"
+enqueue.create -> queue.pending: "new task"
+queue.claimed -> agents: "agent works the task" { style.stroke-dash: 3 }
+agents -> repo.branch: "code, tests, review"
+agents -> queue.pending: "next-stage task,\ndepends_on = this task" { style.stroke-dash: 3 }
+agents -> notify: "on run finish" { style.stroke-dash: 3 }
+notify -> human
+repo.pr -> human: "final review and merge\n(agents never merge)" {
+  style.stroke: "#27ae60"
+  style.stroke-width: 3
+}

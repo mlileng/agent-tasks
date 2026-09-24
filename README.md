@@ -4,7 +4,88 @@ A phase-1, git-flat-file task queue for running multiple Claude Code agents
 as a pipeline (spec → implement → test → review) without you relaying work
 between them by hand.
 
-How it works, in one paragraph: tasks are JSON files under
+## Why this exists
+
+**The problem.** Once you're running more than one Claude Code agent, *you*
+become the message bus. One agent finishes an implementation; you copy the
+branch name and context into a second session to get it tested; the tester
+finds a failure; you carry that back to the first agent; then you shepherd
+the result to a reviewer. Each hop needs you awake, at your keyboard, and
+holding the whole picture in your head. The agents are fast; the handoffs
+are the bottleneck, and they're the boring part of the job.
+
+**What this changes for you.** You write down what you want (a spec, or just
+a GitHub issue URL) and walk away. Agents pick up the work, hand it to each
+other, send it backwards when tests fail, and stop at a ready-for-review pull
+request. Your involvement collapses to two moments: deciding what should be
+built, and doing the final human review. Everything in between is fully
+autonomous, including overnight and while you're on another machine.
+
+Concretely, that means:
+
+- **No relaying.** Handoffs happen through `complete-task.sh --next-stage`,
+  not through you pasting context between terminals.
+- **Failures loop back on their own.** A tester or reviewer can send work
+  back to the implement stage without a human noticing first.
+- **Cheap to leave running.** Each loop only spends a `claude -p` call when
+  there's actually a pending task for it; idle polling costs nothing.
+- **Nothing gets past you.** Agents never merge. The pipeline ends at a PR
+  marked ready for human review.
+- **You can always see what's going on.** `scripts/list-tasks.sh` shows the
+  whole queue, and every task file carries its own history of who did what
+  and when.
+
+**Why not an existing tool?** Before building this we looked around for
+something that already did this job, and nothing fit, including using Jira
+as the coordination point. The gap is that existing task trackers are built
+for humans as the workers: they assume someone reads a ticket, drags it
+across a board, and updates it by hand. What this needed was different:
+
+- an **atomic claim**, so two agents never grab the same task;
+- **machine-checkable dependencies**, so a test task isn't claimable until
+  its implement task is done;
+- **agents as first-class actors** that can enqueue, claim, complete, and
+  reroute work on their own, from a headless process;
+- **no server, and no API credentials handed to unattended agents**, so the
+  whole coordination layer is a git repo you already know how to host,
+  back up, and audit.
+
+Git gives us the atomic claim for free (a rejected push means someone else
+won), plain JSON files give us a queue anyone can read or grep, and the
+history is the audit log. That's why the whole thing is a few short bash
+scripts rather than a service.
+
+## How it works
+
+![Architecture diagram](docs/architecture.png)
+
+The diagram is generated from [`docs/architecture.d2`](docs/architecture.d2).
+GitHub doesn't render [D2](https://d2lang.com) natively, so the PNG is
+committed alongside the source. After editing the `.d2` file, regenerate it:
+
+```
+d2 --layout=dagre --pad 40 docs/architecture.d2 docs/architecture.png
+```
+
+1. **Enqueue.** You (or an agent) run `create-task.sh` or
+   `create-task-from-issue.sh`, which drops a JSON file in
+   `tasks/<repo>/pending/`.
+2. **Claim.** A loop polls the queue. When it sees work, it launches a
+   headless `claude -p` run, which calls `claim-task.sh`. That does a
+   `git mv` into `claimed/<agent-id>/`, commits, and pushes. Only one push
+   can win; the loser pulls, sees the task is gone, and picks another.
+3. **Work.** The agent does its stage's job in a git worktree of the target
+   repo, following its role file in `.claude/agents/`.
+4. **Complete and chain.** `complete-task.sh` moves the task to `done/`,
+   records the result, and can enqueue the next stage with a `depends_on`
+   pointing back at it. Tests pass, work moves to review; tests fail, it goes
+   back to implement.
+5. **Hand off to you.** The reviewer opens the PR and stops. You review and
+   merge.
+
+## How it works, in one paragraph
+
+Tasks are JSON files under tasks are JSON files under
 `tasks/<repo>/{pending,claimed,done}/`. Claiming a task is a `git mv` into
 `claimed/<agent-id>/` followed by a commit and push; if two agents race for
 the same task, only one push lands as a fast-forward, and the loser pulls,
@@ -25,6 +106,8 @@ agent-tasks/
       pending/<task-id>.json
       claimed/<agent-id>/<task-id>.json
       done/<task-id>.json
+  docs/architecture.d2         # architecture diagram (D2 source)
+  docs/architecture.png        # rendered diagram, embedded in this README
   schema/task.schema.json      # what a task JSON looks like
   scripts/
     lib.sh                     # shared helpers (sourced, not run directly)
