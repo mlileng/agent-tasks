@@ -41,6 +41,10 @@
       "type": "object",
       "description": "Freeform input for whichever agent claims this stage (spec text, file paths, prior stage's result, etc.)."
     },
+    "preferred_agent": {
+      "type": "string",
+      "description": "Optional agent-id this task is reserved for. If set, claim-task.sh skips this task for any --agent-id that doesn't match exactly (case-sensitive). Absent/empty means any agent may claim it."
+    },
     "result": {
       "type": "object",
       "description": "Freeform output written by complete-task.sh when the task finishes."

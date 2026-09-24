@@ -7,7 +7,9 @@
 # first, our push is rejected as a non-fast-forward, we pull and pick again.
 #
 # A task is only eligible if every id in its depends_on[] exists as a file
-# under some tasks/*/done/ directory.
+# under some tasks/*/done/ directory, and if its preferred_agent (when set)
+# exactly matches <agent-id> — an unset/empty preferred_agent means any
+# agent-id may claim it.
 #
 # Prints the claimed task's new path on stdout on success; exits 1 with
 # nothing on stdout if no eligible task is found.
@@ -35,9 +37,12 @@ MAX_ATTEMPTS=5
 ATTEMPT=0
 
 is_eligible() {
-  # $1 = path to a pending task json. Checks stage/repo filters and depends_on.
+  # $1 = path to a pending task json. Checks stage/repo filters, preferred_agent, and depends_on.
   local f="$1"
   if [[ -n "$STAGE" ]] && ! jq -e --arg s "$STAGE" '.stage == $s' "$f" >/dev/null; then
+    return 1
+  fi
+  if ! jq -e --arg a "$AGENT_ID" '(.preferred_agent // "") as $p | $p == "" or $p == $a' "$f" >/dev/null; then
     return 1
   fi
   local deps

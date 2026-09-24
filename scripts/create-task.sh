@@ -10,6 +10,8 @@
 #   --branch NAME         branch in the target repo this task concerns
 #   --description TEXT    longer free-text description
 #   --created-by WHO      defaults to $USER
+#   --preferred-agent ID  reserve this task for one agent-id; claim-task.sh
+#                         skips it for any other --agent-id (see its header)
 #
 # Prints the new task's path on stdout.
 
@@ -30,6 +32,7 @@ DEPENDS_ON='[]'
 BRANCH=""
 DESCRIPTION=""
 CREATED_BY="${USER:-unknown}"
+PREFERRED_AGENT=""
 
 while (( $# )); do
   case "$1" in
@@ -39,6 +42,7 @@ while (( $# )); do
     --branch) BRANCH="$2"; shift 2 ;;
     --description) DESCRIPTION="$2"; shift 2 ;;
     --created-by) CREATED_BY="$2"; shift 2 ;;
+    --preferred-agent) PREFERRED_AGENT="$2"; shift 2 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -59,11 +63,13 @@ jq -n \
   --argjson payload "$PAYLOAD" \
   --argjson depends_on "$DEPENDS_ON" \
   --arg created_by "$CREATED_BY" \
+  --arg preferred_agent "$PREFERRED_AGENT" \
   --arg now "$(now_iso)" \
   '{
     id: $id, repo: $repo, branch: $branch, stage: $stage, status: "pending",
     title: $title, description: $description, priority: $priority,
     depends_on: $depends_on, payload: $payload, result: {},
+    preferred_agent: $preferred_agent,
     created_at: $now, created_by: $created_by,
     history: [{event: "created", agent: $created_by, at: $now}]
   }' > "$DEST"

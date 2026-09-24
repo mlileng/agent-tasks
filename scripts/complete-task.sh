@@ -10,6 +10,7 @@
 #   --next-stage STAGE          if set, create-task.sh is called for the next stage
 #   --next-payload '<json>'     payload for the next-stage task (default: this task's result)
 #   --next-priority N           priority for the next-stage task (default: same as this task)
+#   --next-preferred-agent ID   reserve the next-stage task for one agent-id (see claim-task.sh)
 #
 # Prints the done task's path on stdout, and the next task's path on a
 # second line if --next-stage was given.
@@ -29,6 +30,7 @@ RESULT='{}'
 NEXT_STAGE=""
 NEXT_PAYLOAD=""
 NEXT_PRIORITY=""
+NEXT_PREFERRED_AGENT=""
 
 while (( $# )); do
   case "$1" in
@@ -37,6 +39,7 @@ while (( $# )); do
     --next-stage) NEXT_STAGE="$2"; shift 2 ;;
     --next-payload) NEXT_PAYLOAD="$2"; shift 2 ;;
     --next-priority) NEXT_PRIORITY="$2"; shift 2 ;;
+    --next-preferred-agent) NEXT_PREFERRED_AGENT="$2"; shift 2 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -76,5 +79,6 @@ if [[ -n "$NEXT_STAGE" && "$STATUS" == "done" ]]; then
         --priority "$PRIORITY" --payload "$PAYLOAD"
         --depends-on "$TASK_ID" --created-by "$AGENT_ID")
   [[ -n "$BRANCH" ]] && ARGS+=(--branch "$BRANCH")
+  [[ -n "$NEXT_PREFERRED_AGENT" ]] && ARGS+=(--preferred-agent "$NEXT_PREFERRED_AGENT")
   "${ARGS[@]}"
 fi

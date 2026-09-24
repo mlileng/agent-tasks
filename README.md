@@ -219,6 +219,28 @@ without a human relaying "go fix this."
 to see the whole queue's state. There's no daemon required to view it, it's
 just files.
 
+### Reserving a task for one agent
+
+By default any agent-id matching `--stage`/`--repo` can claim a task —
+first push wins. To guarantee a specific tool or identity handles a stage
+(e.g. "the PR review for this one must go to a particular reviewer, not
+whichever loop happens to poll first"), set `preferred_agent`:
+
+```
+scripts/create-task.sh example-repo review "Review the auth PR" \
+  --preferred-agent security-reviewer-bot
+
+# or, chaining off a finished stage:
+scripts/complete-task.sh <claimed-task-path> <agent-id> \
+  --next-stage review --next-preferred-agent security-reviewer-bot
+```
+
+`claim-task.sh` skips any task whose `preferred_agent` doesn't exactly
+match the `--agent-id` it's called with (case-sensitive) — a mismatch
+prints "no eligible pending task found," not an error, so double-check the
+id if a reserved task seems stuck. An unset/empty `preferred_agent` means
+any agent may claim it, same as before this field existed.
+
 ## Upgrading a seeded copy
 
 Once you've cloned this somewhere and started running pipelines, that copy
